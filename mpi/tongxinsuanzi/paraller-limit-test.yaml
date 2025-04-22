@@ -1,0 +1,85 @@
+apiVersion: kubeflow.org/v2beta1
+kind: MPIJob
+metadata:
+  name: mpi-fusion-parallel
+spec:
+  slotsPerWorker: 1
+  runPolicy:
+    cleanPodPolicy: Running
+  mpiReplicaSpecs:
+    Launcher:
+      replicas: 1
+      template:
+        spec:
+          containers:
+            - name: launcher
+              image: cyber1010/mpi-operator-riscv64:latest
+              env:
+                - name: OMPI_MCA_plm_rsh_agent
+                  value: ":"
+                - name: PMIX_MCA_gds
+                  value: "hash"
+              resources:
+                limits:
+                   cpu: "1"
+                   memory: "512Mi"
+                requests:
+                   cpu: "0.5"
+                   memory: "256Mi"   
+              command: ["bash", "-c"]
+              args:
+                - |
+                  # 生成并行测试代码
+                  cat <<EOF > fusion_test.c
+                  #include <mpi.h>
+                  #include <stdio.h>
+                  #define ITER 1000000
+                  int heavy_computation() {
+                      int sum = 0;
+                      for (int i = 0; i < ITER; i++) {
+                          sum += i % 100;
+                      }
+                      return sum;
+                  }
+                  int main(int argc, char** argv) {
+                      MPI_Init(&argc, &argv);
+                      double start, end;
+                      int rank, local_data, global_sum;
+                      MPI_Request request;
+                      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+                      
+                      start = MPI_Wtime();
+                      // 并行执行：启动非阻塞通信后立即进行计算
+                      local_data = 0;
+                      MPI_Iallreduce(&local_data, &global_sum, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD, &request);
+                      local_data = heavy_computation();  // 计算与通信重叠
+                      MPI_Wait(&request, MPI_STATUS_IGNORE);
+                      end = MPI_Wtime();
+                      
+                      if (rank == 0) {
+                          printf("[Parallel] Total time: %.4f seconds\n", end - start);
+                      }
+                      MPI_Finalize();
+                      return 0;
+                  }
+                  EOF
+                  # 编译并运行
+                  mpicc fusion_test.c -o fusion_test
+                  mpirun --allow-run-as-root -n 4 ./fusion_test
+    Worker:
+      replicas: 3
+      template:
+        spec:
+          containers:
+            - name: worker
+              image: cyber1010/mpi-operator-riscv64:latest
+              env:
+                - name: PMIX_MCA_gds
+                  value: "hash"
+              resources:
+                limits:
+                  cpu: "1"
+                  memory: "512Mi"
+                requests:
+                  cpu: "0.5"
+                  memory: "128Mi"

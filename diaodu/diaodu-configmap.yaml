@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-config
+data:
+  index.html: |
+    <html>
+    <head><title>My Kubernetes App</title></head>
+    <body><h1>Hello, Kubernetes!</h1></body>
+    </html>
+

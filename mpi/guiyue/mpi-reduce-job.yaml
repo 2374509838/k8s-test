@@ -1,0 +1,61 @@
+apiVersion: kubeflow.org/v2beta1
+kind: MPIJob
+metadata:
+  name: mpi-reduce-test
+spec:
+  slotsPerWorker: 1
+  runPolicy:
+    cleanPodPolicy: Running
+  mpiReplicaSpecs:
+    Launcher:
+      replicas: 1
+      template:
+        spec:
+          containers:
+            - name: launcher
+              image: cyber1010/mpi-operator-riscv64:latest
+              env:
+                - name: OMPI_MCA_plm_rsh_agent
+                  value: ":"
+                - name: PMIX_MCA_gds
+                  value: "hash"
+              command: ["bash", "-c"]
+              args:
+                - |
+                  # 生成并编译 MPI 程序（仅在 Launcher 中执行一次）
+                  cat <<EOF > reduce_test.c
+                  #include <mpi.h>
+                  #include <stdio.h>
+                  int main(int argc, char** argv) {
+                      MPI_Init(&argc, &argv);
+                      int rank, local_value, global_sum;
+                      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+                      
+                      local_value = rank + 1;
+                      MPI_Reduce(&local_value, &global_sum, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+                      
+                      if (rank == 0) {
+                          printf("[Result] Global sum: %d\n", global_sum);
+                      }
+                      MPI_Finalize();
+                      return 0;
+                  }
+                  EOF
+                  mpicc reduce_test.c -o reduce_test  # 编译
+                  # 使用 mpirun 启动 MPI 进程（总进程数 = Worker数量 + 1）
+                  mpirun --allow-run-as-root -n 4 ./reduce_test  # 直接运行编译后的程序
+    Worker:
+      replicas: 3
+      template:
+        spec:
+          containers:
+            - name: worker
+              image: cyber1010/mpi-operator-riscv64:latest
+              env:
+                - name: PMIX_MCA_gds
+                  value: "hash"
+              resources:
+                limits:
+                  cpu: "1"
+                  memory: "512Mi"
+

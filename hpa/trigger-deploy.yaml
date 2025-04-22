@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trigger-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: trigger-service
+  template:
+    metadata:
+      labels:
+        app: trigger-service
+    spec:
+      containers:
+      - name: main
+        image: ubuntu:latest
+        command:
+          - /bin/bash
+          - -c
+          - |
+            # 内存压力控制开关（通过文件存在性判断）
+            pressure_switch="/tmp/enable_pressure"
+            
+            # 目标内存压力值（单位：字节）
+            target_mem_pressure=$((512 * 1024 * 1024))  # 例如：256MB
+
+            # 压力生成函数
+            generate_pressure() {
+              mem_used=$(cat /sys/fs/cgroup/memory/memory.usage_in_bytes)
+              echo "[压力模式] 当前已使用内存：$((mem_used / 1024 / 1024))MB，目标内存压力：$((target_mem_pressure / 1024 / 1024))MB"
+              
+              # 只在已使用内存小于目标内存时填充
+              if [ $mem_used -lt $target_mem_pressure ]; then
+                # 计算需要填充的内存量
+                mem_to_fill=$((target_mem_pressure - mem_used))
+                echo "通过 tail/base64 填充内存 $((mem_to_fill / 1024 / 1024))MB"
+                
+                # 使用 tail + base64 填充内存
+                tail /dev/zero | base64 | head -c $mem_to_fill >/dev/null
+              else
+                echo "[压力模式] 已达到目标内存压力，不再填充"
+              fi
+            }
+
+            # 压力控制循环
+            (
+              while true; do
+                if [ -f $pressure_switch ]; then
+                  generate_pressure
+                  sleep 5  # 持续压力模式
+                else
+                  echo "[空闲模式] 释放内存"
+                  sleep 2
+                fi
+              done
+            ) &
+
+
+            # 健康检查服务
+            while true; do
+              echo -e "HTTP/1.1 200 OK\n\nOK" | nc -l -p 8080 -q 0
+            done
+        ports:
+          - containerPort: 8080
+        resources:
+          limits:
+            memory: "512Mi"  # 内存上限
+          requests:
+            memory: "256Mi"   # HPA 将基于此值的百分比计算利用率

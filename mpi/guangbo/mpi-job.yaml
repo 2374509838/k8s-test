@@ -1,0 +1,30 @@
+apiVersion: kubeflow.org/v2beta1
+kind: MPIJob
+metadata:
+  name: mpi-broadcast-job
+  namespace: default
+spec:
+  slotsPerWorker: 1
+  mpiReplicaSpecs:
+    Launcher:
+      replicas: 1
+      template:
+        spec:
+          containers:
+            - name: mpi-container
+              image: cyber1010/k8s:mpi-operator-riscv64-latest  # 使用支持 MPI 的镜像
+              command: ["/bin/sh", "-c", "
+                echo 'Hello from root' > /tmp/data.txt;  # 写入广播数据
+                mpirun --allow-run-as-root -np 4 --bind-to none --map-by slot /bin/bash -c 'cat /tmp/data.txt; echo Received data from root: $(cat /tmp/data.txt)'"]
+              # 在根进程中执行广播操作，所有进程都会接收到此数据
+
+    Worker:
+      replicas: 3  # 3个工作节点
+      template:
+        spec:
+          containers:
+            - name: mpi-container
+              image: cyber1010/k8s:mpi-operator-riscv64-latest  # 使用支持 MPI 的镜像
+              command: ["/bin/sh", "-c", "
+                mpirun --allow-run-as-root -np 4 --bind-to none --map-by slot /bin/bash -c 'cat /tmp/data.txt; echo Received data from root: $(cat /tmp/data.txt)'"]
+              # 在工作节点中接收并打印来自根进程的广播数据

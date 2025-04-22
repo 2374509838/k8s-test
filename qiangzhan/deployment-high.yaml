@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: high-priority-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: high-priority
+  template:
+    metadata:
+      labels:
+        app: high-priority
+    spec:
+      priorityClassName: priority-high
+      containers:
+        - name: high-container
+          image: ubuntu:latest
+          command: ["/bin/sh", "-c", "sleep infinity"]
+          resources:
+            requests:
+              cpu: "3500m"
+              memory: "512Mi"
+            limits:
+              cpu: "4000m"
+              memory: "1024Mi"
+

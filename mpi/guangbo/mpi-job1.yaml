@@ -1,0 +1,53 @@
+apiVersion: kubeflow.org/v2beta1
+kind: MPIJob
+metadata:
+  name: mpi-broadcast-demo
+spec:
+  slotsPerWorker: 1
+  runPolicy:
+    cleanPodPolicy: Running
+  mpiReplicaSpecs:
+    Launcher:
+      replicas: 1
+      template:
+        spec:
+          containers:
+            - name: mpi-launcher
+              image: cyber1010/mpi-operator-riscv64:latest  # 使用已有镜像
+              command: ["mpirun"]
+              args:
+                - "--allow-run-as-root"
+                - "--mca"
+                - "plm_rsh_disabled"
+                - "1"
+                - "-n"
+                - "4"
+                - "--hostfile"
+                - "/etc/mpi/hostfile"
+                - "bash"
+                - "-c"
+                - |
+                  # 生成一个临时MPI程序并编译运行
+                  echo '
+                  #include <mpi.h>
+                  #include <stdio.h>
+                  int main(int argc, char** argv) {
+                      MPI_Init(&argc, &argv);
+                      int rank, data;
+                      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+                      if (rank == 0) data = 42;
+                      MPI_Bcast(&data, 1, MPI_INT, 0, MPI_COMM_WORLD);
+                      printf("Rank %d received data: %d\n", rank, data);
+                      MPI_Finalize();
+                      return 0;
+                  }' > broadcast.c
+                  mpicc broadcast.c -o broadcast
+                  mpirun --allow-run-as-root --mca plm_rsh_disabled 1 -n 4 --hostfile /etc/mpi/hostfile ./broadcast
+    Worker:
+      replicas: 3
+      template:
+        spec:
+          containers:
+            - name: mpi-worker
+              image: cyber1010/mpi-operator-riscv64:latest
+

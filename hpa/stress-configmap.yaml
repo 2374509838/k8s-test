@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: stress-config
+data:
+  cpu: "1"                  # 默认启动 2 个 CPU 压测进程
+  vm: "1"                   # 启动 1 个内存压测进程
+  vm-bytes: "256M"          # 每个内存进程占用 512MB
+  timeout: "3m"            # 压测持续 30 分钟
+
