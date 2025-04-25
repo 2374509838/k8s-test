@@ -20,7 +20,7 @@ spec:
                   - key: zone
                     operator: In
                     values:
-                      - zone2  # 只允许调度到 zone=zone1 的节点上
+                      - zone1  # 只允许调度到 zone=zone1 的节点上
       containers:
         - name: my-app
           image: ubuntu:latest  # 轻量级基础镜像
