@@ -50,6 +50,7 @@ spec:
           containers:
             - name: mpi-worker
               image: cyber1010/mpi-operator-riscv64:latest
+              imagePullPolicy: IfNotPresent
               env:
                 - name: PMIX_MCA_gds
                   value: "hash"
