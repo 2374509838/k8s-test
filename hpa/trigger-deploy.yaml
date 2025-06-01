@@ -24,7 +24,7 @@ spec:
             pressure_switch="/tmp/enable_pressure"
             
             # 目标内存压力值（单位：字节）
-            target_mem_pressure=$((512 * 1024 * 1024))  # 例如：256MB
+            target_mem_pressure=$((180 * 1024 * 1024))  # 例如：256MB
 
             # 压力生成函数
             generate_pressure() {
