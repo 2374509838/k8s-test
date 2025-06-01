@@ -24,5 +24,6 @@ spec:
       containers:
         - name: my-app
           image: ubuntu:latest  # 轻量级基础镜像
+          imagePullPolicy: IfNotPresent
           command: ["/bin/sh", "-c", "sleep infinity"]  # 让容器保持运行
 
