@@ -6,6 +6,7 @@ spec:
   containers:
     - name: stress-container
       image: ubuntu:latest
+      imagePullPolicy: IfNotPresent
       args:
         - "-cpus"
         - "4"  # 占满 4 核 CPU
