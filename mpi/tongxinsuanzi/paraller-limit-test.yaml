@@ -14,6 +14,7 @@ spec:
           containers:
             - name: launcher
               image: cyber1010/mpi-operator-riscv64:latest
+              imagePullPolicy: IfNotPresent
               env:
                 - name: OMPI_MCA_plm_rsh_agent
                   value: ":"
@@ -73,6 +74,7 @@ spec:
           containers:
             - name: worker
               image: cyber1010/mpi-operator-riscv64:latest
+              imagePullPolicy: IfNotPresent
               env:
                 - name: PMIX_MCA_gds
                   value: "hash"
