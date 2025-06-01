@@ -15,6 +15,7 @@ spec:
       containers:
       - name: main
         image: ubuntu:latest
+        imagePullPolicy: IfNotPresent
         command:
           - /bin/bash
           - -c
