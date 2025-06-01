@@ -15,6 +15,7 @@ spec:
       containers:
         - name: ubuntu
           image: ubuntu:latest
+          imagePullPolicy: IfNotPresent
           resources:
             requests:
               cpu: "100m"
