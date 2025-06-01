@@ -16,6 +16,7 @@ spec:
       containers:
         - name: high-container
           image: ubuntu:latest
+          imagePullPolicy: IfNotPresent
           command: ["/bin/sh", "-c", "sleep infinity"]
           resources:
             requests:
