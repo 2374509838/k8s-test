@@ -20,8 +20,8 @@ spec:
           command: ["/bin/sh", "-c", "sleep infinity"]
           resources:
             requests:
-              cpu: "500m"
-              memory: "512Mi"
+              cpu: "115000m"
+              memory: "108Gi"
             limits:
-              cpu: "1000m"
-              memory: "1024Mi"
+              cpu: "115000m"
+              memory: "108Gi"
